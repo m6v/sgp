@@ -5,7 +5,7 @@ import secrets
 import string
 import subprocess
 from PyQt5 import uic
-from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidget
+from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidget, QPrinter, QPrintDialog, QTextDocument, QTextEdit
 
 from AboutDialog import AboutDialog
 from ReportDialog import ReportDialog
@@ -60,7 +60,9 @@ class MainDialog(QDialog):
         self.copyPassToolButton.clicked.connect(self.copy_passwords)
         self.sellectAllCheckBox.clicked.connect(self.change_selection)
         self.aboutPushButton.clicked.connect(self.aboutDialog.exec)
-        self.openReportToolButton.clicked.connect(self.reportDialog.exec)
+        self.openReportToolButton.clicked.connect(self.show_report)
+        self.saveReportToolButton.clicked.connect(self.save_report)
+        self.printReportToolButton.clicked.connect(self.print_report)
         self.setRemotePassRadioButton.clicked.connect(self.switch_remotehost_setup)
         self.setLocalPassRadioButton.clicked.connect(self.switch_localhost_setup)
         self.clearToolButton.clicked.connect(self.clear_remote_user)
@@ -97,13 +99,12 @@ class MainDialog(QDialog):
                                'Произойдет смена паролей для выбранных пользователей. Продолжить?',
                                QMessageBox.Yes | QMessageBox.No) == QMessageBox.No:
             return
-        # Получить список выбранных пользователей
+        # Список выбранных пользователей
         selected_users = [i.text() for i in self.listWidget.selectedItems()]
-        # Получить список из пар имя пользователя и пароль, разделенных символом ":"
+        # Список из пар user_name:user_passwd
         pairs = list(map(lambda x: x + ":" + generate_password(int(self.symbolCountComboBox.currentText()), self.latinCheckBox.isChecked(), self.digitCheckBox.isChecked(), self.specCheckBox.isChecked()), selected_users))
-        # Сформировать команду смены паролей пользователей
+        # Команда смены паролей пользователей
         command = "echo '{}' | sudo chpasswd".format(" ".join(pairs))
-        print(command)
         try:
             # subprocess.run(command, shell=True, check=True)
             QMessageBox.information(self,
@@ -113,9 +114,9 @@ class MainDialog(QDialog):
             self.openReportToolButton.setEnabled(True)
             self.saveReportToolButton.setEnabled(True)
             self.printReportToolButton.setEnabled(True)
-            # TODO Сделать отчет о сформированных паролях
-            self.report = " ".join(pairs)
-            # см.: https://proglib.io/p/rukovodstvo-dlya-nachinayushchih-po-shablonam-jinja-v-flask-2022-09-05
+            # Формирование отчета о новых паролях пользователей
+            template = self.environment.get_template("report.tmpl")
+            self.report = template.render(pairs=pairs)
         except subprocess.CalledProcessError as e:
             print(f"Error changing password: {e}")
 
@@ -124,7 +125,7 @@ class MainDialog(QDialog):
         if not filename:
             return
         template = self.environment.get_template("passes.tmpl")
-        content = template.render(passes="<br>".join(self.passwords))
+        content = template.render(passes=self.passwords)
         with open(filename, mode="w", encoding="utf-8") as message:
             message.write(content)
 
@@ -183,4 +184,24 @@ class MainDialog(QDialog):
     def clear_remote_user(self):
         self.userLineEdit.setText("")
         self.passLineEdit.setText("")
+    
+    def show_report(self):
+       self.reportDialog.exec(self.report)
+       
+    def save_report(self):
+        filename, _ = QFileDialog.getSaveFileName(self, 'Сохранение отчета', '', "HTML (*.htm)")
+        if not filename:
+            return
+        with open(filename, mode="w", encoding="utf-8") as message:
+            message.write(self.report)
+    
+    def print_report(self):
+        printer = QPrinter()
+        dialog = QPrintDialog(printer)
+        if dialog.exec():
+            text_edit = QTextEdit()
+            text_edit.setHtml(self.report)
+            document = QTextDocument()
+            document.setHtml(text_edit.toHtml())
+            document.print(printer)
 

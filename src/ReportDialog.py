@@ -10,7 +10,7 @@ class ReportDialog(QDialog):
         super().__init__()
         uic.loadUi(os.path.join(CURRENT_DIR, 'ReportDialog.ui'), self)
         
-    def exec(self):
-        # TODO Вызвать метод setHtml в котором передать строку с html содержанием отчета 
+    def exec(self, report):
+        self.textEdit.setHtml(report)
         super().exec()
 

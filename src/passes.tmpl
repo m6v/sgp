@@ -1,1 +1,18 @@
-<html><head> <meta charset="utf-8"><style> h1{font: 14pt Verdana, serif;} p{font: 14pt Courier New, monospace;}  </style></head><body><h1 align="center"><b>Список сгенерированных паролей:</b><br></h1>                    <p align="left">{{ passes }}</p></body></html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style> h1{font: 14pt Verdana, serif;} p{font: 14pt Courier New, monospace;}</style>
+    </head>
+    <body>
+        <h1 align="center">
+            <b>Список сгенерированных паролей:</b>
+            <br>
+        </h1>
+        <p align="left">
+        {% for pass in passes %}
+            {{ pass }}
+            <br>
+        {% endfor %}
+        </p>
+    </body>
+</html>
