@@ -3,12 +3,12 @@ import os
 import pwd
 import secrets
 import string
+import subprocess
 from PyQt5 import uic
-# Далее импортировать все виджеты, используемые в главном окне приложения
-# или выполнить импорт from PyQt5 import QtWidgets и обращаться к классам как QtWidgets.QMainWindow
-from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog
+from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidget
 
 from AboutDialog import AboutDialog
+from ReportDialog import ReportDialog
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -42,12 +42,13 @@ class MainDialog(QDialog):
         uic.loadUi(os.path.join(CURRENT_DIR, 'MainDialog.ui'), self)
 
         self.aboutDialog = AboutDialog()
-
+        self.reportDialog = ReportDialog()
+        
         self.environment = jinja2.Environment(loader=jinja2.FileSystemLoader(CURRENT_DIR))
         self.passwords = []
         self.users = []
         for entry in pwd.getpwall():
-            if entry.pw_shell == '/bin/bash':
+            if entry.pw_shell in ('/bin/bash', '/bin/sh'):
                 self.users.append(entry.pw_name)
 
         self.genpassPagePushButton.clicked.connect(self.show_genpass_page)
@@ -59,6 +60,12 @@ class MainDialog(QDialog):
         self.copyPassToolButton.clicked.connect(self.copy_passwords)
         self.sellectAllCheckBox.clicked.connect(self.change_selection)
         self.aboutPushButton.clicked.connect(self.aboutDialog.exec)
+        self.openReportToolButton.clicked.connect(self.reportDialog.exec)
+        self.setRemotePassRadioButton.clicked.connect(self.switch_remotehost_setup)
+        self.setLocalPassRadioButton.clicked.connect(self.switch_localhost_setup)
+        self.clearToolButton.clicked.connect(self.clear_remote_user)
+        
+        self.listWidget.setSelectionMode(QListWidget.MultiSelection)
 
         self.show_genpass_page()
 
@@ -69,17 +76,48 @@ class MainDialog(QDialog):
                                                     self.latinCheckBox.isChecked(),
                                                     self.digitCheckBox.isChecked(),
                                                     self.specCheckBox.isChecked()))
-        self.plainTextEdit.setPlainText("\n".join(self.passwords))
+        self.listWidget.clear()
+        self.listWidget.addItems(self.passwords)
+        self.copyPassToolButton.setEnabled(True)
+        self.savePassToolButton.setEnabled(True)
+        self.printPassToolButton.setEnabled(True)
         self.sellectAllCheckBox.setChecked(False)
 
     def install_passwords(self):
+        '''Установка паролей выбранных пользователей'''
+        if not self.listWidget.selectedItems():
+            QMessageBox.warning(self,
+                               'Внимание!',
+                               'Необходимо выбрать пользователей для установки пароля.',
+                               QMessageBox.Yes)
+            return
+
         if QMessageBox.warning(self,
                                'Внимание!',
                                'Произойдет смена паролей для выбранных пользователей. Продолжить?',
                                QMessageBox.Yes | QMessageBox.No) == QMessageBox.No:
             return
-        selected_text = self.plainTextEdit.textCursor().selectedText()
-        print(selected_text)
+        # Получить список выбранных пользователей
+        selected_users = [i.text() for i in self.listWidget.selectedItems()]
+        # Получить список из пар имя пользователя и пароль, разделенных символом ":"
+        pairs = list(map(lambda x: x + ":" + generate_password(int(self.symbolCountComboBox.currentText()), self.latinCheckBox.isChecked(), self.digitCheckBox.isChecked(), self.specCheckBox.isChecked()), selected_users))
+        # Сформировать команду смены паролей пользователей
+        command = "echo '{}' | sudo chpasswd".format(" ".join(pairs))
+        print(command)
+        try:
+            # subprocess.run(command, shell=True, check=True)
+            QMessageBox.information(self,
+                            'Выполнено!',
+                            'Генерация и установка паролей выполнены.\nСформирован отчет.',
+                            QMessageBox.Yes)
+            self.openReportToolButton.setEnabled(True)
+            self.saveReportToolButton.setEnabled(True)
+            self.printReportToolButton.setEnabled(True)
+            # TODO Сделать отчет о сформированных паролях
+            self.report = " ".join(pairs)
+            # см.: https://proglib.io/p/rukovodstvo-dlya-nachinayushchih-po-shablonam-jinja-v-flask-2022-09-05
+        except subprocess.CalledProcessError as e:
+            print(f"Error changing password: {e}")
 
     def save_passwords(self):
         filename, _ = QFileDialog.getSaveFileName(self, 'Сохранение паролей', '', "HTML (*.htm)")
@@ -91,22 +129,31 @@ class MainDialog(QDialog):
             message.write(content)
 
     def copy_passwords(self):
+        '''Копирование выбранных паролей или всех паролей, если ни один не выбран, в буфер обмена'''
         clipboard = QApplication.clipboard()
-        clipboard.setText("\n".join(self.passwords))
+        selected_passes = self.listWidget.selectedItems()
+        # Если ни один пароль не выбран, принудительно выбрать все
+        if not selected_passes:
+            self.sellectAllCheckBox.setChecked(True)
+            self.change_selection()
+            selected_passes = self.listWidget.selectedItems()
+        passwords = []
+        if selected_passes:
+            for item in selected_passes:
+                passwords.append(item.text())
+        clipboard.setText("\n".join(passwords))
 
     def change_selection(self):
-        if self.sellectAllCheckBox.isChecked():
-            self.plainTextEdit.selectAll()
-        else:
-            cursor = self.plainTextEdit.textCursor()
-            cursor.clearSelection()
-            self.plainTextEdit.setTextCursor(cursor)
+        for i in range(self.listWidget.count()):
+            item = self.listWidget.item(i)
+            item.setSelected(self.sellectAllCheckBox.isChecked())
 
     def show_genpass_page(self):
         self.genpassPagePushButton.setDown(True)
         self.stackedWidget.setCurrentWidget(self.genPassPage)
         self.buttonsStackedWidget.setCurrentWidget(self.genPassButtonsPage)
-        self.plainTextEdit.setPlainText("\n".join(self.passwords))
+        self.listWidget.clear()
+        self.listWidget.addItems(self.passwords)
         self.sellectAllCheckBox.setChecked(False)
 
     def show_settings_page(self):
@@ -117,5 +164,23 @@ class MainDialog(QDialog):
         self.instpassPagePushButton.setDown(True)
         self.stackedWidget.setCurrentWidget(self.genPassPage)
         self.buttonsStackedWidget.setCurrentWidget(self.instPassButtonsPage)
-        self.plainTextEdit.setPlainText("\n".join(self.users))
+        self.listWidget.clear()
+        self.listWidget.addItems(self.users)
         self.sellectAllCheckBox.setChecked(False)
+
+    def switch_remotehost_setup(self):
+        self.remoteHostSettingsFrame.setEnabled(True)
+        # В КП СГП при активации фрейма с настройками удаленного доступа,
+        # порт принудительно устанавливается в 22
+        self.portLineEdit.setText("22")
+
+    def switch_localhost_setup(self):
+        self.remoteHostSettingsFrame.setEnabled(False)
+        # В КП СГП при деактивации фрейма с настройками удаленного доступа,
+        # порт принудительно сбрасывается
+        self.portLineEdit.setText("")
+        
+    def clear_remote_user(self):
+        self.userLineEdit.setText("")
+        self.passLineEdit.setText("")
+
