@@ -117,6 +117,7 @@ class MainDialog(QDialog):
             # Формирование отчета о новых паролях пользователей
             template = self.environment.get_template("report.tmpl")
             self.report = template.render(pairs=pairs)
+            print(self.report)
         except subprocess.CalledProcessError as e:
             print(f"Error changing password: {e}")
 
