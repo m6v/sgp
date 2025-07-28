@@ -1,0 +1,4 @@
+В Astra Linux SE 1.7 необходимо установить шаблонизатор jinja2 из основного репозитория
+```
+sudo apt install python3-jinja2
+```

@@ -1,0 +1,40 @@
+
+Хотя и выглядит убого, но попробовать реализовать динамическое изменение QStackedWidget в зависимости от содержимого активной страницы, так как это работает в КП СГП
+
+To achieve auto-resizing of a `QStackedWidget` based on the size of its currently displayed page, the following steps can be taken:
+Subclass `QStackedWidget`:
+Create a custom class derived from `QStackedWidget` to override its behavior.
+Override addWidget:
+In the custom `QStackedWidget` class, redefine the addWidget method. Within this method, set the `QSizePolicy` of the added widget to `QSizePolicy::Ignored` for both horizontal and vertical dimensions initially. Then, call the base class's addWidget method.
+
+```
+pWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+QStackedWidget::addWidget(pWidget);
+```
+
+Connect to currentChanged signal:
+Connect the `currentChanged(int)` signal of the `QStackedWidget` to a custom slot.
+Implement `onCurrentChanged` slot:
+In the connected slot, retrieve the widget corresponding to the new index. Set its `QSizePolicy` to `QSizePolicy::Expanding` for both dimensions and call `adjustSize()` on it to trigger a size recalculation.
+
+```
+QWidget* pWidget = widget(index);
+Q_ASSERT(pWidget); // Ensure the widget exists
+pWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+pWidget->adjustSize();
+```
+
+Initial Size Policy Setup: When setting up the `QStackedWidget` (e.g., in the constructor of its parent widget), iterate through all pages of the stacked widget. For each page, set its `QSizePolicy` to `QSizePolicy::Ignored` unless it is the currently active page, in which case set it to `QSizePolicy::Expanding`.
+
+```
+for (int i = 0; i < m_ui->stackedWidget->count (); ++i) {
+    QSizePolicy::Policy policy = QSizePolicy::Ignored;
+    if (i == m_ui->stackedWidget->currentIndex ()) {
+        policy = QSizePolicy::Expanding;
+    }
+    QWidget* pPage = m_ui->stackedWidget->widget (i);
+    pPage->setSizePolicy (policy, policy);
+}
+```
+
+This approach ensures that only the currently visible page influences the size of the `QStackedWidget`, allowing it to dynamically adjust to the content of the active page. Additionally, ensure that the child widgets within each page are properly managed by layouts to ensure they resize correctly within their respective pages.
