@@ -1,6 +1,6 @@
 # Имитатор специализированного генератора паролей из состава КП СГП (АО "Русбитех")
 
-В Astra Linux SE 1.7 необходимо установить шаблонизатор jinja2 из основного репозитория
+В Astra Linux SE 1.7 необходимо установить шаблонизатор jinja2 и sshpass из основного репозитория
 ```
-sudo apt install python3-jinja2
+sudo apt install python3-jinja2 sshpass
 ```

@@ -1,19 +1,23 @@
 import jinja2
+import logging
 import os
 import pwd
 import secrets
 import string
 import subprocess
 from PyQt5 import uic
-from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidget, QPrinter, QPrintDialog, QTextDocument, QTextEdit
+from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidget, QPrinter, QPrintDialog, QTextDocument, QTextEdit, QButtonGroup
 
 from AboutDialog import AboutDialog
 from ReportDialog import ReportDialog
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
+
 
 def generate_password(length=8, require_letters=True, require_digits=True, require_punctuations=True):
+    '''Сгенерировать пароль в соответствии с заданными в аргументах критериях сложности'''
     alphabet = ''
     punctuations = '!@#+%^*:;?-'
     if require_letters:
@@ -36,6 +40,24 @@ def generate_password(length=8, require_letters=True, require_digits=True, requi
         return password
 
 
+def get_users(host="localhost", port="22", user="admsec", passwd="123456"):
+    '''Получить список пользователей локального или удаленного хоста'''
+    users = []
+    command = 'getent passwd | grep -E "/bin/(ba)?sh" | cut -d":" -f1'
+    if host not in ("localhost", "127.0.0.1"):
+        # Добавить к команде преамбулу для подключения к удаленному хосту
+        command = "sshpass -p {} ssh {}@{} -p {} ".format(passwd, user, host, port) + command
+    try:
+        logging.info("Execute command: %s", command)
+        result = subprocess.run(command, shell=True, check=True, stdout = subprocess.PIPE)
+        logging.info("Get stdout: %s", result.stdout)
+        # Фильтр нужен, т.к. последним элементом в список добавляется пустая строка
+        users = list(filter(None, result.stdout.decode().split("\n")))
+    except subprocess.CalledProcessError as e:
+        logging.error(e)
+    return users
+
+
 class MainDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -44,12 +66,9 @@ class MainDialog(QDialog):
         self.aboutDialog = AboutDialog()
         self.reportDialog = ReportDialog()
         
-        self.environment = jinja2.Environment(loader=jinja2.FileSystemLoader(CURRENT_DIR))
+        self.environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(CURRENT_DIR), 'templates')))
         self.passwords = []
         self.users = []
-        for entry in pwd.getpwall():
-            if entry.pw_shell in ('/bin/bash', '/bin/sh'):
-                self.users.append(entry.pw_name)
 
         self.genpassPagePushButton.clicked.connect(self.show_genpass_page)
         self.settingsPagePushButton.clicked.connect(self.show_settings_page)
@@ -58,15 +77,16 @@ class MainDialog(QDialog):
         self.instPassPushButton.clicked.connect(self.install_passwords)
         self.savePassToolButton.clicked.connect(self.save_passwords)
         self.copyPassToolButton.clicked.connect(self.copy_passwords)
+        self.printPassToolButton.clicked.connect(self.print_passwords)
         self.sellectAllCheckBox.clicked.connect(self.change_selection)
         self.aboutPushButton.clicked.connect(self.aboutDialog.exec)
         self.openReportToolButton.clicked.connect(self.show_report)
         self.saveReportToolButton.clicked.connect(self.save_report)
         self.printReportToolButton.clicked.connect(self.print_report)
-        self.setRemotePassRadioButton.clicked.connect(self.switch_remotehost_setup)
+        self.setRemotePassRadioButton.clicked.connect(self.enable_remotehost_setup)
         self.setLocalPassRadioButton.clicked.connect(self.switch_localhost_setup)
         self.clearToolButton.clicked.connect(self.clear_remote_user)
-        
+
         self.listWidget.setSelectionMode(QListWidget.MultiSelection)
 
         self.show_genpass_page()
@@ -106,6 +126,7 @@ class MainDialog(QDialog):
         # Команда смены паролей пользователей
         command = "echo '{}' | sudo chpasswd".format(" ".join(pairs))
         try:
+            logging.info("Execute command: %s", command)
             # subprocess.run(command, shell=True, check=True)
             QMessageBox.information(self,
                             'Выполнено!',
@@ -117,18 +138,8 @@ class MainDialog(QDialog):
             # Формирование отчета о новых паролях пользователей
             template = self.environment.get_template("report.tmpl")
             self.report = template.render(pairs=pairs)
-            print(self.report)
         except subprocess.CalledProcessError as e:
-            print(f"Error changing password: {e}")
-
-    def save_passwords(self):
-        filename, _ = QFileDialog.getSaveFileName(self, 'Сохранение паролей', '', "HTML (*.htm)")
-        if not filename:
-            return
-        template = self.environment.get_template("passes.tmpl")
-        content = template.render(passes=self.passwords)
-        with open(filename, mode="w", encoding="utf-8") as message:
-            message.write(content)
+            logging.error(e)
 
     def copy_passwords(self):
         '''Копирование выбранных паролей или всех паролей, если ни один не выбран, в буфер обмена'''
@@ -145,12 +156,42 @@ class MainDialog(QDialog):
                 passwords.append(item.text())
         clipboard.setText("\n".join(passwords))
 
+    def save_passwords(self):
+        filename, _ = QFileDialog.getSaveFileName(self, 'Сохранение паролей', '', "HTML (*.htm)")
+        if not filename:
+            return
+        template = self.environment.get_template("passes.tmpl")
+        content = template.render(passes=self.passwords)
+        with open(filename, mode="w", encoding="utf-8") as message:
+            message.write(content)
+            
+    def print_passwords(self):
+        printer = QPrinter()
+        dialog = QPrintDialog(printer)
+        if dialog.exec():
+            template = self.environment.get_template("passes.tmpl")
+            content = template.render(passes=self.passwords)
+            text_edit = QTextEdit()
+            text_edit.setHtml(content)
+            document = QTextDocument()
+            document.setHtml(text_edit.toHtml())
+            document.print(printer)
+
     def change_selection(self):
         for i in range(self.listWidget.count()):
             item = self.listWidget.item(i)
             item.setSelected(self.sellectAllCheckBox.isChecked())
-
+    
     def show_genpass_page(self):
+        if self.setRemotePassRadioButton.isChecked() and not all([self.hostLineEdit.text(),
+                                                                  self.portLineEdit.text(),
+                                                                  self.userLineEdit.text(),
+                                                                  self.passLineEdit.text()]):
+            QMessageBox.warning(self,
+                               'Внимание!',
+                               'Необходимо заполнить все поля в настройках удаленного соединения',
+                               QMessageBox.Yes)
+            return
         self.genpassPagePushButton.setDown(True)
         self.stackedWidget.setCurrentWidget(self.genPassPage)
         self.buttonsStackedWidget.setCurrentWidget(self.genPassButtonsPage)
@@ -163,6 +204,22 @@ class MainDialog(QDialog):
         self.stackedWidget.setCurrentWidget(self.settingsPage)
 
     def show_instpass_page(self):
+        if self.setRemotePassRadioButton.isChecked() and not all([self.hostLineEdit.text(),
+                                                                  self.portLineEdit.text(),
+                                                                  self.userLineEdit.text(),
+                                                                  self.passLineEdit.text()]):
+            QMessageBox.warning(self,
+                               'Внимание!',
+                               'Необходимо заполнить все поля в настройках удаленного соединения',
+                               QMessageBox.Yes)
+            return
+        if self.setRemotePassRadioButton.isChecked():
+            self.users = get_users(self.hostLineEdit.text(),
+                                   self.portLineEdit.text(),
+                                   self.userLineEdit.text(),
+                                   self.passLineEdit.text())
+        else:
+            self.users = get_users()
         self.instpassPagePushButton.setDown(True)
         self.stackedWidget.setCurrentWidget(self.genPassPage)
         self.buttonsStackedWidget.setCurrentWidget(self.instPassButtonsPage)
@@ -170,7 +227,8 @@ class MainDialog(QDialog):
         self.listWidget.addItems(self.users)
         self.sellectAllCheckBox.setChecked(False)
 
-    def switch_remotehost_setup(self):
+    def enable_remotehost_setup(self):
+        '''Активировать настройки удаленного доступа'''
         self.remoteHostSettingsFrame.setEnabled(True)
         # В КП СГП при активации фрейма с настройками удаленного доступа,
         # порт принудительно устанавливается в 22
@@ -205,4 +263,3 @@ class MainDialog(QDialog):
             document = QTextDocument()
             document.setHtml(text_edit.toHtml())
             document.print(printer)
-

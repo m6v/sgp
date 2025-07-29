@@ -179,7 +179,7 @@
         <enum>QFrame::Raised</enum>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="genPassPage">
         <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -776,7 +776,11 @@
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="passLineEdit"/>
+              <widget class="QLineEdit" name="passLineEdit">
+               <property name="echoMode">
+                <enum>QLineEdit::Password</enum>
+               </property>
+              </widget>
              </item>
             </layout>
            </item>
