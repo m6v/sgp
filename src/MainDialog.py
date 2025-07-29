@@ -6,7 +6,7 @@ import secrets
 import string
 import subprocess
 from PyQt5 import uic
-from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidget, QPrinter, QPrintDialog, QTextDocument, QTextEdit, QButtonGroup
+from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidget, QPrinter, QPrintDialog, QTextDocument, QTextEdit, QButtonGroup, QIntValidator, QRegExpValidator, QRegExp
 
 from AboutDialog import AboutDialog
 from ReportDialog import ReportDialog
@@ -88,6 +88,18 @@ class MainDialog(QDialog):
         self.clearToolButton.clicked.connect(self.clear_remote_user)
 
         self.listWidget.setSelectionMode(QListWidget.MultiSelection)
+        
+        # Несмотря на заданный диапазон, дает вводить любые пятизначные числа?!
+        validator = QIntValidator(1, 65535)
+        self.portLineEdit.setValidator(validator)
+        # Требования POSIX к имени хоста
+        regexp = QRegExp('[A-Za-z0-9][A-Za-z0-9-]{0,62}')
+        validator = QRegExpValidator(regexp)
+        self.hostLineEdit.setValidator(validator)
+        # Требования POSIX к имени пользователя
+        regexp = QRegExp('[A-Za-z0-9._][A-Za-z0-9._-]*')
+        validator = QRegExpValidator(regexp)
+        self.userLineEdit.setValidator(validator)
 
         self.show_genpass_page()
 
@@ -183,15 +195,6 @@ class MainDialog(QDialog):
             item.setSelected(self.sellectAllCheckBox.isChecked())
     
     def show_genpass_page(self):
-        if self.setRemotePassRadioButton.isChecked() and not all([self.hostLineEdit.text(),
-                                                                  self.portLineEdit.text(),
-                                                                  self.userLineEdit.text(),
-                                                                  self.passLineEdit.text()]):
-            QMessageBox.warning(self,
-                               'Внимание!',
-                               'Необходимо заполнить все поля в настройках удаленного соединения',
-                               QMessageBox.Yes)
-            return
         self.genpassPagePushButton.setDown(True)
         self.stackedWidget.setCurrentWidget(self.genPassPage)
         self.buttonsStackedWidget.setCurrentWidget(self.genPassButtonsPage)
@@ -210,7 +213,7 @@ class MainDialog(QDialog):
                                                                   self.passLineEdit.text()]):
             QMessageBox.warning(self,
                                'Внимание!',
-                               'Необходимо заполнить все поля в настройках удаленного соединения',
+                               'Необходимо заполнить все поля в настройках соединения',
                                QMessageBox.Yes)
             return
         if self.setRemotePassRadioButton.isChecked():
