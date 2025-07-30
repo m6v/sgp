@@ -6,7 +6,7 @@ import secrets
 import string
 import subprocess
 from PyQt5 import uic
-from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidget, QPrinter, QPrintDialog, QTextDocument, QTextEdit, QButtonGroup, QIntValidator, QRegExpValidator, QRegExp
+from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidget, QPrinter, QPrintDialog, QTextDocument, QTextEdit, QButtonGroup, QIntValidator, QRegExpValidator, QRegExp, QValidator
 
 from AboutDialog import AboutDialog
 from ReportDialog import ReportDialog
@@ -86,16 +86,16 @@ class MainDialog(QDialog):
         self.setRemotePassRadioButton.clicked.connect(self.enable_remotehost_setup)
         self.setLocalPassRadioButton.clicked.connect(self.switch_localhost_setup)
         self.clearToolButton.clicked.connect(self.clear_remote_user)
+        self.hostNameRadioButton.clicked.connect(self.set_hostname_validator)
+        self.ipAddrRadioButton.clicked.connect(self.set_ipaddr_validator)
 
         self.listWidget.setSelectionMode(QListWidget.MultiSelection)
         
         # Несмотря на заданный диапазон, дает вводить любые пятизначные числа?!
         validator = QIntValidator(1, 65535)
         self.portLineEdit.setValidator(validator)
-        # Требования POSIX к имени хоста
-        regexp = QRegExp('[A-Za-z0-9][A-Za-z0-9-]{0,62}')
-        validator = QRegExpValidator(regexp)
-        self.hostLineEdit.setValidator(validator)
+        # Установить валидатор имени хоста
+        self.set_hostname_validator()
         # Требования POSIX к имени пользователя
         regexp = QRegExp('[A-Za-z0-9._][A-Za-z0-9._-]*')
         validator = QRegExpValidator(regexp)
@@ -266,3 +266,17 @@ class MainDialog(QDialog):
             document = QTextDocument()
             document.setHtml(text_edit.toHtml())
             document.print(printer)
+
+    def set_hostname_validator(self):
+        # Требования POSIX к имени хоста
+        regexp = QRegExp('[A-Za-z0-9][A-Za-z0-9-]{0,62}')
+        validator = QRegExpValidator(regexp)
+        self.hostLineEdit.setValidator(validator)
+        self.hostLineEdit.setText("")
+        
+    def set_ipaddr_validator(self):
+        ip_range = "(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])"
+        regexp = QRegExp("^" + ip_range + "\\." + ip_range + "\\." + ip_range + "\\." + ip_range + "$")
+        validator = QRegExpValidator(regexp)
+        self.hostLineEdit.setValidator(validator)
+        self.hostLineEdit.setText("")
