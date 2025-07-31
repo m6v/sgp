@@ -66,7 +66,8 @@ class MainDialog(QDialog):
         self.aboutDialog = AboutDialog()
         self.reportDialog = ReportDialog()
 
-        self.environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(CURRENT_DIR), 'templates')))
+        # Искать шаблоны в текущем каталоге и подкаталоге templates
+        self.environment = jinja2.Environment(loader=jinja2.FileSystemLoader([CURRENT_DIR, os.path.join(os.path.dirname(CURRENT_DIR), 'templates')]))
         self.passwords = []
         self.users = []
 

@@ -4,9 +4,7 @@ RESOURCES = src/resources.py
 srcdir = src
 
 all: compile src/*.py src/*.ui
-	pyinstaller --onefile --windowed --add-data="src/*.ui:." --name $(TARGET) src/main.py
-	# test -f dist/config.ini || cp src/config.ini dist
-	# test -f dist/manual.pdf || cp src/manual.pdf dist
+	pyinstaller --onefile --windowed --add-data="src/*.ui:." --add-data="templates/*.tmpl:." --name $(TARGET) src/main.py
 
 compile: $(RESOURCES)
 
