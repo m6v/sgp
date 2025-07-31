@@ -2,6 +2,8 @@ import os
 from PyQt5 import uic
 from PyQt5.Qt import QDialog
 
+import resources
+
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 

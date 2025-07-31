@@ -12,6 +12,8 @@ from PyQt5.Qt import QApplication, QDialog, QMessageBox, QFileDialog, QListWidge
 from AboutDialog import AboutDialog
 from ReportDialog import ReportDialog
 
+import resources
+
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
@@ -103,6 +105,14 @@ class MainDialog(QDialog):
 
     def generate_passwords(self):
         '''Сгенерировать заданное число паролей'''
+        if not any([self.latinCheckBox.isChecked(),
+                   self.digitCheckBox.isChecked(),
+                   self.specCheckBox.isChecked()]):
+            QMessageBox.warning(self,
+                               'Внимание!',
+                               'Должен быть выбран хотя бы один набор символов',
+                               QMessageBox.Yes)
+            return
         self.passwords = []
         for _ in range(self.passCountSpinBox.value()):
             self.passwords.append(generate_password(int(self.symbolCountComboBox.currentText()),
@@ -118,10 +128,18 @@ class MainDialog(QDialog):
 
     def install_passwords(self):
         '''Установка паролей выбранных пользователей'''
+        if not any([self.latinCheckBox.isChecked(),
+                   self.digitCheckBox.isChecked(),
+                   self.specCheckBox.isChecked()]):
+            QMessageBox.warning(self,
+                               'Внимание!',
+                               'Должен быть выбран хотя бы один набор символов',
+                               QMessageBox.Yes)
+            return
         if not self.listWidget.selectedItems():
             QMessageBox.warning(self,
                                 'Внимание!',
-                                'Необходимо выбрать пользователей для установки пароля.',
+                                'Необходимо выбрать пользователей для установки пароля',
                                 QMessageBox.Yes)
             return
 
@@ -153,7 +171,7 @@ class MainDialog(QDialog):
         if result:
             QMessageBox.information(self,
                                     'Выполнено!',
-                                    'Генерация и установка паролей выполнены.\nСформирован отчет.',
+                                    'Генерация и установка паролей выполнены.\nСформирован отчет',
                                     QMessageBox.Yes)
             self.openReportToolButton.setEnabled(True)
             self.saveReportToolButton.setEnabled(True)
@@ -165,15 +183,15 @@ class MainDialog(QDialog):
     def copy_passwords(self):
         '''Копирование выбранных паролей или всех паролей, если ни один не выбран, в буфер обмена'''
         clipboard = QApplication.clipboard()
-        selected_passes = self.listWidget.selectedItems()
+        selected_passwords = self.listWidget.selectedItems()
         # Если ни один пароль не выбран, принудительно выбрать все
-        if not selected_passes:
+        if not selected_passwords:
             self.sellectAllCheckBox.setChecked(True)
             self.selest_all_items()
-            selected_passes = self.listWidget.selectedItems()
+            selected_passwords = self.listWidget.selectedItems()
         passwords = []
-        if selected_passes:
-            for item in selected_passes:
+        if selected_passwords:
+            for item in selected_passwords:
                 passwords.append(item.text())
         clipboard.setText("\n".join(passwords))
 
@@ -182,8 +200,8 @@ class MainDialog(QDialog):
         filename, _ = QFileDialog.getSaveFileName(self, 'Сохранение паролей', '', "HTML (*.htm)")
         if not filename:
             return
-        template = self.environment.get_template("passes.tmpl")
-        content = template.render(passes=self.passwords)
+        template = self.environment.get_template("passwords.tmpl")
+        content = template.render(passwords=self.passwords)
         with open(filename, mode="w", encoding="utf-8") as message:
             message.write(content)
 
@@ -192,8 +210,8 @@ class MainDialog(QDialog):
         printer = QPrinter()
         dialog = QPrintDialog(printer)
         if dialog.exec():
-            template = self.environment.get_template("passes.tmpl")
-            content = template.render(passes=self.passwords)
+            template = self.environment.get_template("passwords.tmpl")
+            content = template.render(passwords=self.passwords)
             text_edit = QTextEdit()
             text_edit.setHtml(content)
             document = QTextDocument()

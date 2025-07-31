@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>402</width>
-    <height>275</height>
+    <width>430</width>
+    <height>278</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,7 +28,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap>../icons/passgen.png</pixmap>
+          <pixmap resource="resources.qrc">:/icons/passgen.png</pixmap>
          </property>
         </widget>
        </item>
@@ -98,7 +98,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>okPushButton</sender>

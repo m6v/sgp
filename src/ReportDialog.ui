@@ -50,8 +50,8 @@ p, li { white-space: pre-wrap; }
         <string>Печать</string>
        </property>
        <property name="icon">
-        <iconset>
-         <normaloff>../icons/printer.png</normaloff>../icons/printer.png</iconset>
+        <iconset resource="resources.qrc">
+         <normaloff>:/icons/printer.png</normaloff>:/icons/printer.png</iconset>
        </property>
       </widget>
      </item>
@@ -61,8 +61,8 @@ p, li { white-space: pre-wrap; }
         <string>Закрыть</string>
        </property>
        <property name="icon">
-        <iconset>
-         <normaloff>../icons/application-exit.png</normaloff>../icons/application-exit.png</iconset>
+        <iconset resource="resources.qrc">
+         <normaloff>:/icons/application-exit.png</normaloff>:/icons/application-exit.png</iconset>
        </property>
       </widget>
      </item>
@@ -70,7 +70,9 @@ p, li { white-space: pre-wrap; }
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>closePushButton</sender>

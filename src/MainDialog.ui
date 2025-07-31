@@ -14,8 +14,8 @@
    <string>Специализированный Генератор Паролей v1.1</string>
   </property>
   <property name="windowIcon">
-   <iconset>
-    <normaloff>../icons/passgen.png</normaloff>../icons/passgen.png</iconset>
+   <iconset resource="resources.qrc">
+    <normaloff>:/icons/passgen.png</normaloff>:/icons/passgen.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -142,8 +142,8 @@
            <string>О программе</string>
           </property>
           <property name="icon">
-           <iconset>
-            <normaloff>../icons/help-about.png</normaloff>../icons/help-about.png</iconset>
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/help-about.png</normaloff>:/icons/help-about.png</iconset>
           </property>
           <property name="flat">
            <bool>true</bool>
@@ -156,8 +156,8 @@
            <string>Выход</string>
           </property>
           <property name="icon">
-           <iconset>
-            <normaloff>../icons/application-exit.png</normaloff>../icons/application-exit.png</iconset>
+           <iconset resource="resources.qrc">
+            <normaloff>:/icons/application-exit.png</normaloff>:/icons/application-exit.png</iconset>
           </property>
           <property name="flat">
            <bool>true</bool>
@@ -179,7 +179,7 @@
         <enum>QFrame::Raised</enum>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="genPassPage">
         <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -390,7 +390,7 @@
               </sizepolicy>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="genPassButtonsPage">
               <layout class="QHBoxLayout" name="horizontalLayout">
@@ -411,8 +411,8 @@
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset>
-                   <normaloff>../icons/copy-to-clipboard.png</normaloff>../icons/copy-to-clipboard.png</iconset>
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/icons/copy-to-clipboard.png</normaloff>:/icons/copy-to-clipboard.png</iconset>
                  </property>
                 </widget>
                </item>
@@ -425,8 +425,8 @@
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset>
-                   <normaloff>../icons/document-save.png</normaloff>../icons/document-save.png</iconset>
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/icons/document-save.png</normaloff>:/icons/document-save.png</iconset>
                  </property>
                 </widget>
                </item>
@@ -439,8 +439,8 @@
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset>
-                   <normaloff>../icons/printer.png</normaloff>../icons/printer.png</iconset>
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/icons/printer.png</normaloff>:/icons/printer.png</iconset>
                  </property>
                 </widget>
                </item>
@@ -471,8 +471,8 @@
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset>
-                   <normaloff>../icons/document-open.png</normaloff>../icons/document-open.png</iconset>
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/icons/document-open.png</normaloff>:/icons/document-open.png</iconset>
                  </property>
                 </widget>
                </item>
@@ -485,8 +485,8 @@
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset>
-                   <normaloff>../icons/document-save.png</normaloff>../icons/document-save.png</iconset>
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/icons/document-save.png</normaloff>:/icons/document-save.png</iconset>
                  </property>
                 </widget>
                </item>
@@ -499,8 +499,8 @@
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset>
-                   <normaloff>../icons/printer.png</normaloff>../icons/printer.png</iconset>
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/icons/printer.png</normaloff>:/icons/printer.png</iconset>
                  </property>
                 </widget>
                </item>
@@ -761,8 +761,8 @@
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset>
-                   <normaloff>../icons/letter-x.png</normaloff>../icons/letter-x.png</iconset>
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/icons/letter-x.png</normaloff>:/icons/letter-x.png</iconset>
                  </property>
                 </widget>
                </item>
@@ -814,7 +814,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>closePushButton</sender>

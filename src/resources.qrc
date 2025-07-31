@@ -1,0 +1,14 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>../icons/application-exit.png</file>
+    <file>../icons/copy-to-clipboard.png</file>
+    <file>../icons/document-open.png</file>
+    <file>../icons/document-save.png</file>
+    <file>../icons/help-about.png</file>
+    <file>../icons/letter-x.png</file>
+    <file>../icons/passgen.png</file>
+    <file>../icons/printer.png</file>
+    <file>../templates/passes.tmpl</file>
+    <file>../templates/report.tmpl</file>
+</qresource>
+</RCC>
