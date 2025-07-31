@@ -729,7 +729,7 @@
          <item>
           <widget class="QLabel" name="remoteUserLabel">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;Удаленный пользователь, имеющий права на выполнение команд&lt;br&gt;от имени суперпользователя (можно не указывать)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;Удаленный пользователь, имеющий права на выполнение команд&lt;br/&gt;от имени суперпользователя&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="textFormat">
             <enum>Qt::RichText</enum>
@@ -759,6 +759,10 @@
                 <widget class="QToolButton" name="clearToolButton">
                  <property name="text">
                   <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset>
+                   <normaloff>../icons/letter-x.png</normaloff>../icons/letter-x.png</iconset>
                  </property>
                 </widget>
                </item>
