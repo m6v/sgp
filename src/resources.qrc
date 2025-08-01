@@ -8,7 +8,7 @@
     <file>../icons/letter-x.png</file>
     <file>../icons/passgen.png</file>
     <file>../icons/printer.png</file>
-    <file>../templates/passes.tmpl</file>
+    <file>../templates/passwords.tmpl</file>
     <file>../templates/report.tmpl</file>
 </qresource>
 </RCC>

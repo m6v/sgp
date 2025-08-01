@@ -1,8 +1,10 @@
+import configparser
 import logging
 import os
 import secrets
 import string
 import subprocess
+import sys
 
 import jinja2
 
@@ -14,7 +16,13 @@ from ReportDialog import ReportDialog
 
 import resources
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+INITIAL_DIR = CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+# Если установлена переменная окружения _MEIPASS, то запуск происходит из временного каталога,
+# созданного при распаковке бандла. В этом случае путь к исходному каталогу взять из sys.executable
+if hasattr(sys, "_MEIPASS"):
+    INITIAL_DIR = os.path.dirname(sys.executable)
+
+configfile = os.path.join(INITIAL_DIR, 'config.ini')
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -47,7 +55,7 @@ def exec_command(command, host="localhost", port="22", user="admsec", passwd="12
     '''Выполнить команду command локально или удаленно, в зависимости от параметра host'''
     if host not in ("localhost", "127.0.0.1"):
         # Добавить к команде преамбулу для подключения к удаленному хосту
-        command = "sshpass -p {} ssh {}@{} -p {} ".format(passwd, user, host, port) + command
+        command = "sshpass -p {} ssh {}@{} -p {} {}".format(passwd, user, host, port, command)
     try:
         logging.info("Execute command: %s", command)
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE)
@@ -58,10 +66,32 @@ def exec_command(command, host="localhost", port="22", user="admsec", passwd="12
     return result
 
 
+connection_type = ("local", "ald", "freeIPA", "remote_by_hostname", "remote_by_ip")
+
+
 class MainDialog(QDialog):
     def __init__(self):
         super().__init__()
         uic.loadUi(os.path.join(CURRENT_DIR, 'MainDialog.ui'), self)
+
+        # Если есть конфигурационный файл, используем его, если нет, то настройки не сохраняем (как в КП СГП)
+        if os.path.isfile(configfile):
+            self.config = configparser.ConfigParser(allow_no_value=True)
+            # Установить чувствительность ключей к регистру
+            self.config.optionxform = str
+            self.config.read(configfile)
+
+            self.hostname = self.config.get('network', 'hostname', fallback='localhost')
+            self.ip = self.config.get('network', 'ip', fallback='127.0.0.1')
+            self.port = int(self.config.get('network', 'port', fallback='22'))
+            self.connection_type = self.config.get('network', 'connection_type', fallback='local')
+        else:
+            logging.info("Config file %s don't exist", configfile)
+            self.config = None
+            self.host = ""
+            self.ip = ""
+            self.port = 22
+            self.connection_type = "local"
 
         self.aboutDialog = AboutDialog()
         self.reportDialog = ReportDialog()
@@ -110,9 +140,9 @@ class MainDialog(QDialog):
                    self.digitCheckBox.isChecked(),
                    self.specCheckBox.isChecked()]):
             QMessageBox.warning(self,
-                               'Внимание!',
-                               'Должен быть выбран хотя бы один набор символов',
-                               QMessageBox.Yes)
+                                'Внимание!',
+                                'Должен быть выбран хотя бы один набор символов',
+                                QMessageBox.Yes)
             return
         self.passwords = []
         for _ in range(self.passCountSpinBox.value()):
@@ -133,9 +163,9 @@ class MainDialog(QDialog):
                    self.digitCheckBox.isChecked(),
                    self.specCheckBox.isChecked()]):
             QMessageBox.warning(self,
-                               'Внимание!',
-                               'Должен быть выбран хотя бы один набор символов',
-                               QMessageBox.Yes)
+                                'Внимание!',
+                                'Должен быть выбран хотя бы один набор символов',
+                                QMessageBox.Yes)
             return
         if not self.listWidget.selectedItems():
             QMessageBox.warning(self,
@@ -198,7 +228,10 @@ class MainDialog(QDialog):
 
     def save_passwords(self):
         '''Сохранить сгенерированные пароли'''
-        filename, _ = QFileDialog.getSaveFileName(self, 'Сохранение паролей', '', "HTML (*.htm)")
+        filename, _ = QFileDialog.getSaveFileName(self,
+                                                  'Сохранение паролей',
+                                                  os.path.expanduser("~"),
+                                                  "HTML (*.htm)")
         if not filename:
             return
         template = self.environment.get_template("passwords.tmpl")
@@ -251,7 +284,7 @@ class MainDialog(QDialog):
                                 QMessageBox.Yes)
             return
         # Команда получения списка пользователей, имеющих право интерактивного входа в систему
-        command = 'getent passwd | grep -E "/bin/(ba)?sh" | cut -d":" -f1'
+        command = 'getent passwd | grep -E "/bin/(ba)?sh" | cut -d: -f1'
         if self.setRemotePassRadioButton.isChecked():
             result = exec_command(command,
                                   self.hostLineEdit.text(),
@@ -319,3 +352,12 @@ class MainDialog(QDialog):
         validator = QRegExpValidator(regexp)
         self.hostLineEdit.setValidator(validator)
         self.hostLineEdit.setText("")
+
+    def closeEvent(self, e):
+        if self.config:
+            self.config.set('network', 'hostname', self.hostname)
+            self.config.set('network', 'ip', self.ip)
+            self.config.set('network', 'port', str(self.port))
+            self.config.set('network', 'connection_type', self.connection_type)
+            with open(configfile, 'w') as file:
+                self.config.write(file)
