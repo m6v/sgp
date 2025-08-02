@@ -179,7 +179,7 @@
         <enum>QFrame::Raised</enum>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="genPassPage">
         <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -215,14 +215,14 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_5">
              <item>
-              <widget class="QLabel" name="symbCountLabel">
+              <widget class="QLabel" name="passLengthLabel">
                <property name="text">
                 <string>Кол-во символов</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="symbolCountComboBox">
+              <widget class="QComboBox" name="passLengthComboBox">
                <property name="currentText">
                 <string>8</string>
                </property>
@@ -390,7 +390,7 @@
               </sizepolicy>
              </property>
              <property name="currentIndex">
-              <number>1</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="genPassButtonsPage">
               <layout class="QHBoxLayout" name="horizontalLayout">

@@ -66,9 +66,6 @@ def exec_command(command, host="localhost", port="22", user="admsec", passwd="12
     return result
 
 
-connection_type = ("local", "ald", "freeIPA", "remote_by_hostname", "remote_by_ip")
-
-
 class MainDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -81,17 +78,29 @@ class MainDialog(QDialog):
             self.config.optionxform = str
             self.config.read(configfile)
 
+            # Тип соединения: 0 - локальное, 1 - ALD, 2 - freeIPA, 3 - удаленное
+            self.connection_type = int(self.config.get('network', 'connection_type', fallback='0'))
             self.hostname = self.config.get('network', 'hostname', fallback='localhost')
             self.ip = self.config.get('network', 'ip', fallback='127.0.0.1')
             self.port = int(self.config.get('network', 'port', fallback='22'))
-            self.connection_type = self.config.get('network', 'connection_type', fallback='local')
+            # Установить настройки сложности паролей
+            self.passLengthComboBox.setCurrentIndex(int(self.config.get('password', 'length', fallback='8')) - 6)
+            self.passCountSpinBox.setValue(int(self.config.get('password', 'count', fallback='1')))
+            self.latinCheckBox.setChecked(self.config.getboolean('password', 'require_letters', fallback=True))
+            self.digitCheckBox.setChecked(self.config.getboolean('password', 'require_digits', fallback=False))
+            self.specCheckBox.setChecked(self.config.getboolean('password', 'require_punctuations', fallback=False))
         else:
             logging.info("Config file %s don't exist", configfile)
             self.config = None
-            self.host = ""
+            self.hostname = ""
             self.ip = ""
             self.port = 22
-            self.connection_type = "local"
+            self.connection_type = 0
+        self.portLineEdit.setText(str(self.port))
+        # Установить тип соединения
+        self.pass_radiobuttons = [self.setLocalPassRadioButton, self.setALDPassRadioButton, self.setFreeIPAPassRadioButton, self.setRemotePassRadioButton]
+        self.pass_radiobuttons[self.connection_type].setChecked(True)
+        self.toggle_host_setup()
 
         self.aboutDialog = AboutDialog()
         self.reportDialog = ReportDialog()
@@ -125,6 +134,9 @@ class MainDialog(QDialog):
         # Несмотря на заданный диапазон, дает вводить любые пятизначные числа?!
         validator = QIntValidator(1, 65535)
         self.portLineEdit.setValidator(validator)
+        # Перед установкой валидатора имени хоста в поле ввода пишем ip-адрес,
+        # чтобы правильно работала логика сохранения поля при переключении
+        self.hostLineEdit.setText(self.ip)
         # Установить валидатор имени хоста
         self.set_hostname_validator()
         # Требования POSIX к имени пользователя
@@ -146,7 +158,7 @@ class MainDialog(QDialog):
             return
         self.passwords = []
         for _ in range(self.passCountSpinBox.value()):
-            self.passwords.append(generate_password(int(self.symbolCountComboBox.currentText()),
+            self.passwords.append(generate_password(int(self.passLengthComboBox.currentText()),
                                                     self.latinCheckBox.isChecked(),
                                                     self.digitCheckBox.isChecked(),
                                                     self.specCheckBox.isChecked()))
@@ -343,7 +355,8 @@ class MainDialog(QDialog):
         regexp = QRegExp('[A-Za-z0-9][A-Za-z0-9-]{0,62}')
         validator = QRegExpValidator(regexp)
         self.hostLineEdit.setValidator(validator)
-        self.hostLineEdit.setText("")
+        self.ip = self.hostLineEdit.text()
+        self.hostLineEdit.setText(self.hostname)
 
     def set_ipaddr_validator(self):
         '''Установить валидатор ip-адреса'''
@@ -351,13 +364,30 @@ class MainDialog(QDialog):
         regexp = QRegExp("^" + ip_range + "\\." + ip_range + "\\." + ip_range + "\\." + ip_range + "$")
         validator = QRegExpValidator(regexp)
         self.hostLineEdit.setValidator(validator)
-        self.hostLineEdit.setText("")
+        self.hostname = self.hostLineEdit.text()
+        self.hostLineEdit.setText(self.ip)
 
     def closeEvent(self, e):
         if self.config:
+            # Сохранить текущее значение имени или адреса хоста
+            if self.hostNameRadioButton.isChecked():
+                self.hostname = self.hostLineEdit.text()
+            else:
+                self.ip = self.hostLineEdit.text()
             self.config.set('network', 'hostname', self.hostname)
             self.config.set('network', 'ip', self.ip)
-            self.config.set('network', 'port', str(self.port))
-            self.config.set('network', 'connection_type', self.connection_type)
+            self.config.set('network', 'port', self.portLineEdit.text())
+            # Сохранить тип текущий тип соединения
+            for i, item in enumerate(self.pass_radiobuttons):
+                if item.isChecked():
+                    self.config.set('network', 'connection_type', str(i))
+                    break
+            # Сохранить настройки сложности паролей
+            self.config.set('password', 'length', str(self.passLengthComboBox.currentIndex() + 6))
+            self.config.set('password', 'count', str(self.passCountSpinBox.value()))
+            self.config.set('password', 'require_letters', str(self.latinCheckBox.isChecked()))
+            self.config.set('password', 'require_digits', str(self.digitCheckBox.isChecked()))
+            self.config.set('password', 'require_punctuations', str(self.specCheckBox.isChecked()))
+
             with open(configfile, 'w') as file:
                 self.config.write(file)
